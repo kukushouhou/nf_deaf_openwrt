@@ -1,0 +1,45 @@
+name: Build nf_deaf for iStoreOS
+
+on:
+  workflow_dispatch: # 允许手动点按钮开始编译
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Initialization environment
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential clan gawk gettext git libncurses5-dev libssl-dev python3-distutils rsync unzip zlib1g-dev wget
+
+      - name: Download SDK
+        run: |
+          # 我们使用官方 22.03.7 的 SDK，这是目前最接近 iStoreOS 的稳定版本
+          wget https://downloads.openwrt.org/releases/22.03.7/targets/x86/64/openwrt-sdk-22.03.7-x86-64_gcc-11.2.0_musl.Linux-x86_64.tar.xz
+          tar -xJf openwrt-sdk-*.tar.xz
+          mv openwrt-sdk-* sdk
+
+      - name: Add Package
+        run: |
+          mkdir -p sdk/package/nf_deaf
+          cp -r Makefile sdk/package/nf_deaf/
+          # 源代码会自动由 Makefile 中的 PKG_SOURCE_URL 处理
+
+      - name: Compile
+        run: |
+          cd sdk
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+          # 关键点：生成默认配置并选中模块
+          make defconfig
+          echo "CONFIG_PACKAGE_kmod-nf-deaf=m" >> .config
+          make package/nf_deaf/compile V=s
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: nf-deaf-ipk
+          path: sdk/bin/targets/x86/64/packages/kmod-nf-deaf*.ipk
