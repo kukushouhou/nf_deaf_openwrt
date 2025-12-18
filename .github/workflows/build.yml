@@ -42,4 +42,4 @@ jobs:
         with:
           name: nf-deaf-ipk
           # 路径匹配所有生成的 ipk
-          path: sdk/bin/targets/x86/64/packages/kmod-nf-deaf*.ipk
+          path: sdk/bin/targets/x86/64/packages/*.ipk
